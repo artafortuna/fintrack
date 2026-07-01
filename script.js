@@ -1,333 +1,245 @@
 // --- KONFIGURASI APLIKASI ---
-const LOGO_URL = "https://cdn-icons-png.flaticon.com/512/3135/3135679.png"; // Ganti URL ini dengan link logo Anda
+const LOGO_URL = "https://cdn-icons-png.flaticon.com/512/3135/3135679.png";
 document.getElementById('app-logo').src = LOGO_URL;
 
-// --- REAL-TIME DATE & CLOCK ---
+// --- JAM & TEMA ---
 function updateClock() {
     const now = new Date();
     const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-    const day = days[now.getDay()];
-    const d = String(now.getDate()).padStart(2, '0');
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    const y = now.getFullYear();
-    const time = now.toLocaleTimeString('id-ID');
-    document.getElementById('realtime-date').innerText = `${day}, ${d}-${m}-${y} | ${time}`;
+    document.getElementById('realtime-date').innerText = `${days[now.getDay()]}, ${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()} | ${now.toLocaleTimeString('id-ID')}`;
 }
-setInterval(updateClock, 1000);
-updateClock();
+setInterval(updateClock, 1000); updateClock();
 
-// --- DARK/LIGHT MODE TOGGLE ---
 const themeBtn = document.getElementById('theme-toggle');
-if(localStorage.getItem('theme') === 'dark') {
-    document.body.classList.add('dark-mode');
-    themeBtn.innerText = '☀️';
-}
+if(localStorage.getItem('theme') === 'dark') { document.body.classList.add('dark-mode'); themeBtn.innerText = '☀️'; }
 themeBtn.addEventListener('click', () => {
     document.body.classList.toggle('dark-mode');
-    if(document.body.classList.contains('dark-mode')){
-        localStorage.setItem('theme', 'dark');
-        themeBtn.innerText = '☀️';
-    } else {
-        localStorage.setItem('theme', 'light');
-        themeBtn.innerText = '🌙';
-    }
+    localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
+    themeBtn.innerText = document.body.classList.contains('dark-mode') ? '☀️' : '🌙';
 });
 
-// --- NAVIGASI BAWAH ---
-function switchPage(pageId, btnElement) {
-    document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
-    document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
-    
-    document.getElementById(pageId).classList.add('active');
-    btnElement.classList.add('active');
-    
-    // Tampilkan FAB hanya di halaman terkait
-    document.querySelectorAll('.fab').forEach(fab => fab.style.display = 'none');
-    if(pageId === 'page-bon') document.querySelector('#page-bon .fab').style.display = 'flex';
-    if(pageId === 'page-hutang') document.querySelector('#page-hutang .fab').style.display = 'flex';
-}
-// Sembunyikan FAB saat di Dashboard awal
-document.querySelectorAll('.fab').forEach(fab => fab.style.display = 'none');
-
-// --- FORMAT RUPIAH ---
+// --- HELPER FORMAT ---
 const formatRupiah = (number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number);
-
-// --- FORMAT TANGGAL DD/MM/YYYY ---
 const formatTanggal = (tanggal) => {
     if (!tanggal) return '-';
     const [tahun, bulan, hari] = tanggal.split('-');
     return `${hari}/${bulan}/${tahun}`;
 };
-
-// --- SETUP INDEXEDDB MUTAKHIR ---
-const dbName = "FinTrackDB";
-let db;
-
-const initDB = () => {
-    return new Promise((resolve, reject) => {
-        const request = indexedDB.open(dbName, 1);
-        request.onupgradeneeded = (e) => {
-            db = e.target.result;
-            if (!db.objectStoreNames.contains('bon')) {
-                db.createObjectStore('bon', { keyPath: 'id' });
-            }
-            if (!db.objectStoreNames.contains('hutang')) {
-                db.createObjectStore('hutang', { keyPath: 'id' });
-            }
-        };
-        request.onsuccess = (e) => { db = e.target.result; resolve(); };
-        request.onerror = (e) => reject(e.target.error);
-    });
+const getDaysDiff = (targetDateStr) => {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const target = new Date(targetDateStr); target.setHours(0,0,0,0);
+    return Math.ceil((target - today) / (1000 * 60 * 60 * 24));
 };
 
-// --- OPERASI DATABASE HELPER ---
+// --- NAVIGASI BAWAH ---
+function switchPage(pageId, btnElement) {
+    document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(pageId).classList.add('active');
+    btnElement.classList.add('active');
+    
+    // Tampilkan FAB hanya di halaman tabel
+    document.querySelectorAll('.fab').forEach(fab => fab.style.display = 'none');
+    if(pageId === 'page-bon') document.querySelector('#page-bon .fab').style.display = 'flex';
+    if(pageId === 'page-hutang') document.querySelector('#page-hutang .fab').style.display = 'flex';
+    if(pageId === 'page-tagihan') document.querySelector('#page-tagihan .fab').style.display = 'flex';
+}
+document.querySelectorAll('.fab').forEach(fab => fab.style.display = 'none');
+
+// --- DATABASE (IndexedDB VERSI 2) ---
+const dbName = "FinTrackDB"; let db;
+const initDB = () => new Promise((resolve, reject) => {
+    const request = indexedDB.open(dbName, 2); 
+    request.onupgradeneeded = (e) => {
+        db = e.target.result;
+        if (!db.objectStoreNames.contains('bon')) db.createObjectStore('bon', { keyPath: 'id' });
+        if (!db.objectStoreNames.contains('hutang')) db.createObjectStore('hutang', { keyPath: 'id' });
+        if (!db.objectStoreNames.contains('tagihan')) db.createObjectStore('tagihan', { keyPath: 'id' });
+    };
+    request.onsuccess = (e) => { db = e.target.result; resolve(); };
+    request.onerror = (e) => reject(e.target.error);
+});
 const dbOp = {
-    getAll: (storeName) => new Promise((resolve) => {
-        const tx = db.transaction(storeName, 'readonly');
-        const store = tx.objectStore(storeName);
-        const req = store.getAll();
-        req.onsuccess = () => resolve(req.result || []);
-    }),
-    put: (storeName, data) => new Promise((resolve) => {
-        const tx = db.transaction(storeName, 'readwrite');
-        const store = tx.objectStore(storeName);
-        store.put(data);
-        tx.oncomplete = () => resolve();
-    }),
-    delete: (storeName, id) => new Promise((resolve) => {
-        const tx = db.transaction(storeName, 'readwrite');
-        const store = tx.objectStore(storeName);
-        store.delete(id);
-        tx.oncomplete = () => resolve();
-    })
+    getAll: (store) => new Promise(res => { const req = db.transaction(store, 'readonly').objectStore(store).getAll(); req.onsuccess = () => res(req.result || []); }),
+    put: (store, data) => new Promise(res => { const tx = db.transaction(store, 'readwrite').objectStore(store).put(data); tx.onsuccess = () => res(); }),
+    delete: (store, id) => new Promise(res => { const tx = db.transaction(store, 'readwrite').objectStore(store).delete(id); tx.onsuccess = () => res(); })
 };
 
-// --- MODAL CONTROLLER ---
+// --- MODAL ---
 const openModal = (id) => document.getElementById(id).classList.add('show');
-const closeModal = (id) => {
-    document.getElementById(id).classList.remove('show');
-    if(id === 'modal-bon') document.getElementById('form-bon').reset();
-    if(id === 'modal-hutang') document.getElementById('form-hutang').reset();
-    if(id === 'modal-bayar') document.getElementById('form-bayar').reset();
+const closeModal = (id) => { 
+    document.getElementById(id).classList.remove('show'); 
+    const form = document.getElementById('form-' + id.split('-')[1]);
+    if (form) form.reset(); 
+    
+    // PERBAIKAN BUG OVERWRITE: Kosongkan paksa hidden ID dan kembalikan judul Modal menjadi "Tambah"
+    if (id === 'modal-bon') {
+        document.getElementById('bon-id').value = '';
+        document.getElementById('modal-bon-title').innerText = 'Tambah Bon';
+    } else if (id === 'modal-hutang') {
+        document.getElementById('hp-id').value = '';
+        document.getElementById('modal-hutang-title').innerText = 'Tambah Hutang/Piutang';
+    } else if (id === 'modal-tagihan') {
+        document.getElementById('tagihan-id').value = '';
+        document.getElementById('modal-tagihan-title').innerText = 'Tambah Tagihan';
+    } else if (id === 'modal-bayar') {
+        document.getElementById('bayar-id').value = '';
+        document.getElementById('bayar-table').value = '';
+    }
 };
 
-// --- LOGIKA BON TOKO ---
-document.getElementById('form-bon').addEventListener('submit', async (e) => {
+// --- SUBMIT FORM DATA ---
+const handleFormSubmit = async (e, table, prefix) => {
     e.preventDefault();
-    const idInput = document.getElementById('bon-id').value;
-    const total = parseInt(document.getElementById('bon-total').value);
-    
-    // Jika data baru, dibayar awal = 0
-    let dibayar = 0; 
-    
-    if(idInput) { // Mode Edit, pertahankan nilai dibayar lama
-        const existingData = (await dbOp.getAll('bon')).find(b => b.id === idInput);
-        if(existingData) dibayar = existingData.dibayar;
-    }
-
-    let sisa = total - dibayar;
-    if(sisa < 0) sisa = 0;
-    
-    let status = sisa === 0 ? 'Lunas' : (dibayar > 0 ? 'Cicil' : 'Belum Lunas');
-
-    const data = {
-        id: idInput ? idInput : Date.now().toString(),
-        tanggal: document.getElementById('bon-tanggal').value,
-        toko: document.getElementById('bon-toko').value,
-        barang: document.getElementById('bon-barang').value,
-        total: total,
-        dibayar: dibayar,
-        sisa: sisa,
-        status: status
-    };
-
-    await dbOp.put('bon', data);
-    closeModal('modal-bon');
-    loadData();
-});
-
-// --- LOGIKA HUTANG/PIUTANG ---
-document.getElementById('form-hutang').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const idInput = document.getElementById('hp-id').value;
-    const total = parseInt(document.getElementById('hp-total').value);
-    
+    const idInput = document.getElementById(`${prefix}-id`).value;
+    const total = parseInt(document.getElementById(`${prefix}-total`).value);
     let dibayar = 0;
-    if(idInput) { 
-        const existingData = (await dbOp.getAll('hutang')).find(h => h.id === idInput);
-        if(existingData) dibayar = existingData.dibayar;
-    }
 
-    let sisa = total - dibayar;
-    if(sisa < 0) sisa = 0;
-    
+    if(idInput) { 
+        const existing = (await dbOp.getAll(table)).find(x => x.id === idInput);
+        if(existing) dibayar = existing.dibayar;
+    }
+    let sisa = Math.max(0, total - dibayar);
     let status = sisa === 0 ? 'Lunas' : (dibayar > 0 ? 'Cicil' : 'Belum Lunas');
 
-    const data = {
-        id: idInput ? idInput : Date.now().toString(),
-        tanggal: document.getElementById('hp-tanggal').value,
-        jenis: document.getElementById('hp-jenis').value,
-        pihak: document.getElementById('hp-pihak').value,
-        ket: document.getElementById('hp-ket').value,
-        total: total,
-        dibayar: dibayar,
-        sisa: sisa,
-        status: status
-    };
+    let data = { id: idInput || Date.now().toString(), total, dibayar, sisa, status };
 
-    await dbOp.put('hutang', data);
-    closeModal('modal-hutang');
-    loadData();
-});
+    if(table === 'bon') {
+        data.tanggal = document.getElementById('bon-tanggal').value;
+        data.toko = document.getElementById('bon-toko').value;
+        data.barang = document.getElementById('bon-barang').value;
+    } else if(table === 'hutang') {
+        data.tanggal = document.getElementById('hp-tanggal').value;
+        data.jenis = document.getElementById('hp-jenis').value;
+        data.pihak = document.getElementById('hp-pihak').value;
+        data.ket = document.getElementById('hp-ket').value;
+    } else if(table === 'tagihan') {
+        data.tanggal = document.getElementById('tagihan-tanggal').value;
+        data.pihak = document.getElementById('tagihan-pihak').value; 
+        data.nama = document.getElementById('tagihan-nama').value;
+    }
 
-// --- LOGIKA PEMBAYARAN / CICILAN ---
+    await dbOp.put(table, data); closeModal(`modal-${table === 'hutang' ? 'hutang' : table}`); loadData();
+};
+document.getElementById('form-bon').addEventListener('submit', e => handleFormSubmit(e, 'bon', 'bon'));
+document.getElementById('form-hutang').addEventListener('submit', e => handleFormSubmit(e, 'hutang', 'hp'));
+document.getElementById('form-tagihan').addEventListener('submit', e => handleFormSubmit(e, 'tagihan', 'tagihan'));
+
+// --- PEMBAYARAN ---
 function triggerBayar(table, id, sisa_saat_ini) {
     document.getElementById('bayar-table').value = table;
     document.getElementById('bayar-id').value = id;
     document.getElementById('bayar-sisa-label').innerText = formatRupiah(sisa_saat_ini);
-    document.getElementById('bayar-jumlah').max = sisa_saat_ini; // Tidak bisa bayar lebih dari sisa
+    document.getElementById('bayar-jumlah').max = sisa_saat_ini; 
     openModal('modal-bayar');
 }
-
 document.getElementById('form-bayar').addEventListener('submit', async (e) => {
     e.preventDefault();
     const table = document.getElementById('bayar-table').value;
-    const id = document.getElementById('bayar-id').value;
-    const jmlBayar = parseInt(document.getElementById('bayar-jumlah').value);
-
-    const allData = await dbOp.getAll(table);
-    const item = allData.find(d => d.id === id);
-
+    const item = (await dbOp.getAll(table)).find(d => d.id === document.getElementById('bayar-id').value);
     if(item) {
-        item.dibayar += jmlBayar;
-        item.sisa = item.total - item.dibayar;
-        if(item.sisa <= 0) {
-            item.sisa = 0;
-            item.status = 'Lunas';
-        } else {
-            item.status = 'Cicil';
-        }
-        await dbOp.put(table, item);
-        closeModal('modal-bayar');
-        loadData();
+        item.dibayar += parseInt(document.getElementById('bayar-jumlah').value);
+        item.sisa = Math.max(0, item.total - item.dibayar);
+        item.status = item.sisa === 0 ? 'Lunas' : 'Cicil';
+        await dbOp.put(table, item); closeModal('modal-bayar'); loadData();
     }
 });
 
-// --- FUNGSI EDIT & HAPUS ---
+// --- EDIT & HAPUS ---
 async function editData(table, id) {
-    const allData = await dbOp.getAll(table);
-    const item = allData.find(d => d.id === id);
-    if(!item) return;
-
+    const item = (await dbOp.getAll(table)).find(d => d.id === id); if(!item) return;
     if(table === 'bon') {
-        document.getElementById('bon-id').value = item.id;
-        document.getElementById('bon-tanggal').value = item.tanggal;
-        document.getElementById('bon-toko').value = item.toko;
-        document.getElementById('bon-barang').value = item.barang;
-        document.getElementById('bon-total').value = item.total;
-        document.getElementById('modal-bon-title').innerText = "Edit Bon Toko";
-        openModal('modal-bon');
-    } else {
-        document.getElementById('hp-id').value = item.id;
-        document.getElementById('hp-tanggal').value = item.tanggal;
-        document.getElementById('hp-jenis').value = item.jenis;
-        document.getElementById('hp-pihak').value = item.pihak;
-        document.getElementById('hp-ket').value = item.ket;
-        document.getElementById('hp-total').value = item.total;
-        document.getElementById('modal-hutang-title').innerText = "Edit Hutang/Piutang";
-        openModal('modal-hutang');
+        ['id', 'tanggal', 'toko', 'barang', 'total'].forEach(k => document.getElementById(`bon-${k}`).value = item[k]);
+        document.getElementById('modal-bon-title').innerText = "Edit Bon"; openModal('modal-bon');
+    } else if(table === 'hutang') {
+        ['id', 'tanggal', 'jenis', 'pihak', 'ket', 'total'].forEach(k => document.getElementById(`hp-${k}`).value = item[k]);
+        document.getElementById('modal-hutang-title').innerText = "Edit Hutang/Piutang"; openModal('modal-hutang');
+    } else if(table === 'tagihan') {
+        ['id', 'tanggal', 'pihak', 'nama', 'total'].forEach(k => document.getElementById(`tagihan-${k}`).value = item[k]);
+        document.getElementById('modal-tagihan-title').innerText = "Edit Tagihan"; openModal('modal-tagihan');
     }
 }
+async function deleteData(table, id) { if(confirm("Hapus data secara permanen?")) { await dbOp.delete(table, id); loadData(); } }
 
-async function deleteData(table, id) {
-    if(confirm("Apakah Anda yakin ingin menghapus data ini secara permanen?")) {
-        await dbOp.delete(table, id);
-        loadData();
-    }
+// --- DASHBOARD FILTER (CARI NAMA) ---
+async function filterDashboard() {
+    const query = document.getElementById('search-name').value.toLowerCase();
+    const [dataBon, dataHp, dataTagihan] = await Promise.all([dbOp.getAll('bon'), dbOp.getAll('hutang'), dbOp.getAll('tagihan')]);
+    
+    let sums = { bon:0, bonSisa:0, htg:0, htgSisa:0, ptg:0, ptgSisa:0, tag:0, tagSisa:0 };
+
+    dataBon.forEach(d => { if (d.toko.toLowerCase().includes(query)) { sums.bon += d.total; sums.bonSisa += d.sisa; } });
+    dataHp.forEach(d => {
+        if (d.pihak.toLowerCase().includes(query)) {
+            if(d.jenis === 'Hutang') { sums.htg += d.total; sums.htgSisa += d.sisa; }
+            else { sums.ptg += d.total; sums.ptgSisa += d.sisa; }
+        }
+    });
+    dataTagihan.forEach(d => {
+        if ((d.pihak && d.pihak.toLowerCase().includes(query)) || (d.nama && d.nama.toLowerCase().includes(query))) {
+            sums.tag += d.total; sums.tagSisa += d.sisa;
+        }
+    });
+
+    document.getElementById('dash-bon-total').innerText = formatRupiah(sums.bon); document.getElementById('dash-bon-sisa').innerText = formatRupiah(sums.bonSisa);
+    document.getElementById('dash-hutang-total').innerText = formatRupiah(sums.htg); document.getElementById('dash-hutang-sisa').innerText = formatRupiah(sums.htgSisa);
+    document.getElementById('dash-piutang-total').innerText = formatRupiah(sums.ptg); document.getElementById('dash-piutang-sisa').innerText = formatRupiah(sums.ptgSisa);
+    document.getElementById('dash-tagihan-total').innerText = formatRupiah(sums.tag); document.getElementById('dash-tagihan-sisa').innerText = formatRupiah(sums.tagSisa);
 }
 
-// --- FUNGSI RENDER KE LAYAR ---
-function getStatusBadge(status) {
-    let cls = status === 'Lunas' ? 'lunas' : (status === 'Cicil' ? 'cicil' : 'belum');
-    return `<span class="badge ${cls}">${status}</span>`;
-}
+// --- RENDER DATA & SMART ALERT TAGIHAN ---
+const getStatusBadge = (s) => `<span class="badge ${s==='Lunas'?'lunas':(s==='Cicil'?'cicil':'belum')}">${s}</span>`;
 
 async function loadData() {
-    const dataBon = await dbOp.getAll('bon');
-    const dataHp = await dbOp.getAll('hutang');
+    const [dataBon, dataHp, dataTagihan] = await Promise.all([dbOp.getAll('bon'), dbOp.getAll('hutang'), dbOp.getAll('tagihan')]);
 
-    // --- Render Tabel Bon ---
-    const tbodyBon = document.getElementById('tbody-bon');
-    tbodyBon.innerHTML = '';
-    let sumBonTotal = 0, sumBonSisa = 0;
+    // Render Tabel Bon
+    document.getElementById('tbody-bon').innerHTML = dataBon.map((d, i) => `
+        <tr><td>${i + 1}</td><td>${formatTanggal(d.tanggal)}</td><td>${d.toko}</td><td>${d.barang}</td>
+        <td>${formatRupiah(d.total)}</td><td>${formatRupiah(d.dibayar)}</td><td>${formatRupiah(d.sisa)}</td><td>${getStatusBadge(d.status)}</td>
+        <td>${d.status !== 'Lunas' ? `<button class="btn-action btn-pay" onclick="triggerBayar('bon','${d.id}',${d.sisa})">💰</button>` : ''}
+        <button class="btn-action btn-edit" onclick="editData('bon','${d.id}')">✏️</button> <button class="btn-action btn-del" onclick="deleteData('bon','${d.id}')">🗑️</button></td></tr>
+    `).join('');
 
-    dataBon.forEach((d, index) => {
-        sumBonTotal += d.total; sumBonSisa += d.sisa;
-        let btnBayar = d.status !== 'Lunas' ? `<button class="btn-action btn-pay" onclick="triggerBayar('bon', '${d.id}', ${d.sisa})">💰 Bayar</button>` : '';
-        tbodyBon.innerHTML += `
-            <tr>
-                <td>${index + 1}</td>
-                <td>${formatTanggal(d.tanggal)}</td>
-                <td>${d.toko}</td>
-                <td>${d.barang}</td>
-                <td>${formatRupiah(d.total)}</td>
-                <td>${formatRupiah(d.dibayar)}</td>
-                <td>${formatRupiah(d.sisa)}</td>
-                <td>${getStatusBadge(d.status)}</td>
-                <td>
-                    ${btnBayar}
-                    <button class="btn-action btn-edit" onclick="editData('bon', '${d.id}')">✏️ Edit</button>
-                    <button class="btn-action btn-del" onclick="deleteData('bon', '${d.id}')">🗑️ Hapus</button>
-                </td>
-            </tr>
-        `;
-    });
+    // Render Tabel Hutang
+    document.getElementById('tbody-hutang').innerHTML = dataHp.map((d, i) => `
+        <tr><td>${i + 1}</td><td>${formatTanggal(d.tanggal)}</td><td><span class="badge ${d.jenis==='Hutang'?'type-hutang':'type-piutang'}">${d.jenis}</span></td>
+        <td>${d.pihak}</td><td>${d.ket}</td><td>${formatRupiah(d.total)}</td><td>${formatRupiah(d.dibayar)}</td><td>${formatRupiah(d.sisa)}</td><td>${getStatusBadge(d.status)}</td>
+        <td>${d.status !== 'Lunas' ? `<button class="btn-action btn-pay" onclick="triggerBayar('hutang','${d.id}',${d.sisa})">💰</button>` : ''}
+        <button class="btn-action btn-edit" onclick="editData('hutang','${d.id}')">✏️</button> <button class="btn-action btn-del" onclick="deleteData('hutang','${d.id}')">🗑️</button></td></tr>
+    `).join('');
 
-    // --- Render Tabel Hutang / Piutang ---
-    const tbodyHp = document.getElementById('tbody-hutang');
-    tbodyHp.innerHTML = '';
-    let sumHutangTotal = 0, sumHutangSisa = 0, sumPiutangTotal = 0, sumPiutangSisa = 0;
+    // Render Tabel Tagihan
+    document.getElementById('tbody-tagihan').innerHTML = dataTagihan.map((d, i) => `
+        <tr><td>${i + 1}</td><td>${formatTanggal(d.tanggal)}</td><td>${d.pihak || '-'}</td><td>${d.nama}</td>
+        <td>${formatRupiah(d.total)}</td><td>${formatRupiah(d.dibayar)}</td><td>${formatRupiah(d.sisa)}</td><td>${getStatusBadge(d.status)}</td>
+        <td>${d.status !== 'Lunas' ? `<button class="btn-action btn-pay" onclick="triggerBayar('tagihan','${d.id}',${d.sisa})">💰</button>` : ''}
+        <button class="btn-action btn-edit" onclick="editData('tagihan','${d.id}')">✏️</button> <button class="btn-action btn-del" onclick="deleteData('tagihan','${d.id}')">🗑️</button></td></tr>
+    `).join('');
 
-    dataHp.forEach((d, index) => {
-        if(d.jenis === 'Hutang') { sumHutangTotal += d.total; sumHutangSisa += d.sisa; }
-        else { sumPiutangTotal += d.total; sumPiutangSisa += d.sisa; }
-        
-        let typeCls = d.jenis === 'Hutang' ? 'type-hutang' : 'type-piutang';
-        let btnBayar = d.status !== 'Lunas' ? `<button class="btn-action btn-pay" onclick="triggerBayar('hutang', '${d.id}', ${d.sisa})">💰 ${d.jenis==='Hutang'?'Bayar':'Tagih'}</button>` : '';
-        
-        tbodyHp.innerHTML += `
-            <tr>
-                <td>${index + 1}</td>
-                <td>${formatTanggal(d.tanggal)}</td>
-                <td><span class="badge ${typeCls}">${d.jenis}</span></td>
-                <td>${d.pihak}</td>
-                <td>${d.ket}</td>
-                <td>${formatRupiah(d.total)}</td>
-                <td>${formatRupiah(d.dibayar)}</td>
-                <td>${formatRupiah(d.sisa)}</td>
-                <td>${getStatusBadge(d.status)}</td>
-                <td>
-                    ${btnBayar}
-                    <button class="btn-action btn-edit" onclick="editData('hutang', '${d.id}')">✏️ Edit</button>
-                    <button class="btn-action btn-del" onclick="deleteData('hutang', '${d.id}')">🗑️ Hapus</button>
-                </td>
-            </tr>
-        `;
-    });
-
-    // --- Update Dashboard Summary ---
-    document.getElementById('dash-bon-total').innerText = formatRupiah(sumBonTotal);
-    document.getElementById('dash-bon-sisa').innerText = formatRupiah(sumBonSisa);
+    // Logika Tagihan Terdekat (Smart Alert)
+    const card = document.getElementById('upcoming-bill-card');
+    const pendingBills = dataTagihan.filter(t => t.status !== 'Lunas').sort((a, b) => new Date(a.tanggal) - new Date(b.tanggal));
     
-    document.getElementById('dash-hutang-total').innerText = formatRupiah(sumHutangTotal);
-    document.getElementById('dash-hutang-sisa').innerText = formatRupiah(sumHutangSisa);
+    if (pendingBills.length === 0) {
+        card.className = "card tagihan-card"; card.innerHTML = `<p style="text-align:center; color:var(--text-muted);">🎉 Asyik! Tidak ada tagihan yang menunggak.</p>`;
+    } else {
+        const closest = pendingBills[0]; const days = getDaysDiff(closest.tanggal);
+        let alertClass = days <= 0 ? "status-critical" : (days <= 3 ? "status-danger" : (days <= 7 ? "status-warning" : "status-safe"));
+        let statusText = days < 0 ? `Telah Lewat ${Math.abs(days)} Hari!` : (days === 0 ? "Jatuh Tempo Hari Ini!" : `Jatuh Tempo H-${days}`);
+        
+        card.className = `card tagihan-card ${alertClass}`;
+        card.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px;">
+                <h4 style="margin:0; font-size:1.1rem; color:var(--text-main);">${closest.nama} (${closest.pihak || '-'})</h4>
+                <span class="badge" style="background:rgba(255,255,255,0.7); color:#333; border: 1px solid var(--border);">${formatTanggal(closest.tanggal)}</span>
+            </div>
+            <p class="amount" style="margin:0; font-size:1.4rem; color:var(--text-main);">${formatRupiah(closest.sisa)}</p>
+            <small style="display:block; margin-top:8px; font-weight:600; color:var(--text-main);">⚠️ ${statusText}</small>
+        `;
+    }
     
-    document.getElementById('dash-piutang-total').innerText = formatRupiah(sumPiutangTotal);
-    document.getElementById('dash-piutang-sisa').innerText = formatRupiah(sumPiutangSisa);
+    filterDashboard(); 
 }
 
-// Inisialisasi Database dan Data Pertama Kali
-window.onload = async () => {
-    await initDB();
-    loadData();
-};
+window.onload = async () => { await initDB(); loadData(); };
