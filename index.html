@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FinTrack - Catatan Keuangan</title>
     <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
@@ -22,13 +22,25 @@
 
     <div class="marquee-container">
         <div class="marquee-content">
-            ✦ Selamat datang di aplikasi pencatatan Bon dan Hutang/Piutang! ✦ 
+            ✦ Selamat datang di aplikasi pencatatan Bon, Hutang/Piutang, dan Tagihan Anda! ✦ Pantau tagihan jatuh tempo dengan mudah! ✦ Powered by Arta Fortuna ✦
         </div>
     </div>
 
     <main>
         <section id="page-dashboard" class="page active">
-            <h2 class="section-title">📊 Rekapitulasi</h2>
+            
+            <h2 class="section-title">🔔 Tagihan Terdekat</h2>
+            <div id="upcoming-bill-card" class="card tagihan-card">
+                </div>
+
+            <div class="dashboard-header">
+                <h2 class="section-title">📊 Rekapitulasi</h2>
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="search-name" placeholder="Cari nama orang/toko..." onkeyup="filterDashboard()">
+                </div>
+            </div>
+
             <div class="card-grid">
                 <div class="card info-card">
                     <h3>Total Bon</h3>
@@ -44,6 +56,11 @@
                     <h3>Total Piutang</h3>
                     <p id="dash-piutang-total" class="amount text-green">Rp 0</p>
                     <small>Sisa Belum Ditagih: <span id="dash-piutang-sisa">Rp 0</span></small>
+                </div>
+                <div class="card info-card">
+                    <h3>Total Tagihan</h3>
+                    <p id="dash-tagihan-total" class="amount text-orange">Rp 0</p>
+                    <small>Sisa Belum Dibayar: <span id="dash-tagihan-sisa">Rp 0</span></small>
                 </div>
             </div>
         </section>
@@ -68,7 +85,7 @@
                     <tbody id="tbody-bon"></tbody>
                 </table>
             </div>
-            <button class="fab" onclick="openModal('modal-bon')">➕</button>
+            <button class="fab" onclick="openModal('modal-bon')">+</button>
         </section>
 
         <section id="page-hutang" class="page">
@@ -92,14 +109,37 @@
                     <tbody id="tbody-hutang"></tbody>
                 </table>
             </div>
-            <button class="fab" onclick="openModal('modal-hutang')">➕</button>
+            <button class="fab" onclick="openModal('modal-hutang')">+</button>
+        </section>
+
+        <section id="page-tagihan" class="page">
+            <h2 class="section-title">📅 Data Tagihan (Bulanan/Rutin)</h2>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Jatuh Tempo</th>
+                            <th>Nama (Pemilik)</th>
+                            <th>Nama Tagihan</th>
+                            <th>Total Tagihan</th>
+                            <th>Dibayar</th>
+                            <th>Sisa</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-tagihan"></tbody>
+                </table>
+            </div>
+            <button class="fab" onclick="openModal('modal-tagihan')">+</button>
         </section>
     </main>
 
     <nav class="bottom-nav">
         <button class="nav-item active" onclick="switchPage('page-dashboard', this)">
             <span class="nav-icon">🏠</span>
-            <span class="nav-text">Dashboard</span>
+            <span class="nav-text">Beranda</span>
         </button>
         <button class="nav-item" onclick="switchPage('page-bon', this)">
             <span class="nav-icon">🧾</span>
@@ -107,7 +147,11 @@
         </button>
         <button class="nav-item" onclick="switchPage('page-hutang', this)">
             <span class="nav-icon">🤝</span>
-            <span class="nav-text">Hutang/Piutang</span>
+            <span class="nav-text">Utang</span>
+        </button>
+        <button class="nav-item" onclick="switchPage('page-tagihan', this)">
+            <span class="nav-icon">📅</span>
+            <span class="nav-text">Tagihan</span>
         </button>
     </nav>
 
@@ -172,6 +216,35 @@
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="btn-cancel" onclick="closeModal('modal-hutang')">Batal</button>
+                    <button type="submit" class="btn-save">Simpan Data</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-tagihan" class="modal">
+        <div class="modal-content">
+            <h3 id="modal-tagihan-title">Tambah Tagihan</h3>
+            <form id="form-tagihan">
+                <input type="hidden" id="tagihan-id">
+                <div class="input-group">
+                    <label>Tanggal Jatuh Tempo</label>
+                    <input type="date" id="tagihan-tanggal" required>
+                </div>
+                <div class="input-group">
+                    <label>Nama (Pemilik/Pihak)</label>
+                    <input type="text" id="tagihan-pihak" required placeholder="Contoh: Budi">
+                </div>
+                <div class="input-group">
+                    <label>Nama Tagihan</label>
+                    <input type="text" id="tagihan-nama" required placeholder="Contoh: Wifi Indihome / Listrik">
+                </div>
+                <div class="input-group">
+                    <label>Total Tagihan (Rp)</label>
+                    <input type="number" id="tagihan-total" required min="0">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeModal('modal-tagihan')">Batal</button>
                     <button type="submit" class="btn-save">Simpan Data</button>
                 </div>
             </form>
