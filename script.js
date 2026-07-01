@@ -65,14 +65,13 @@ const dbOp = {
     delete: (store, id) => new Promise(res => { const tx = db.transaction(store, 'readwrite').objectStore(store).delete(id); tx.onsuccess = () => res(); })
 };
 
-// --- MODAL ---
+// --- MODAL CONTROLLER ---
 const openModal = (id) => document.getElementById(id).classList.add('show');
 const closeModal = (id) => { 
     document.getElementById(id).classList.remove('show'); 
     const form = document.getElementById('form-' + id.split('-')[1]);
     if (form) form.reset(); 
     
-    // PERBAIKAN BUG OVERWRITE: Kosongkan paksa hidden ID dan kembalikan judul Modal menjadi "Tambah"
     if (id === 'modal-bon') {
         document.getElementById('bon-id').value = '';
         document.getElementById('modal-bon-title').innerText = 'Tambah Bon';
@@ -87,6 +86,18 @@ const closeModal = (id) => {
         document.getElementById('bayar-table').value = '';
     }
 };
+
+// --- CUSTOM CONFIRM POPUP ---
+let confirmActionCallback = null;
+function showCustomConfirm(message, callback) {
+    document.getElementById('confirm-msg').innerText = message;
+    confirmActionCallback = callback;
+    openModal('modal-confirm');
+}
+function executeConfirm() {
+    if (confirmActionCallback) confirmActionCallback();
+    closeModal('modal-confirm');
+}
 
 // --- SUBMIT FORM DATA ---
 const handleFormSubmit = async (e, table, prefix) => {
@@ -145,7 +156,7 @@ document.getElementById('form-bayar').addEventListener('submit', async (e) => {
     }
 });
 
-// --- EDIT & HAPUS ---
+// --- EDIT & HAPUS (DENGAN CUSTOM CONFIRM) ---
 async function editData(table, id) {
     const item = (await dbOp.getAll(table)).find(d => d.id === id); if(!item) return;
     if(table === 'bon') {
@@ -159,7 +170,14 @@ async function editData(table, id) {
         document.getElementById('modal-tagihan-title').innerText = "Edit Tagihan"; openModal('modal-tagihan');
     }
 }
-async function deleteData(table, id) { if(confirm("Hapus data secara permanen?")) { await dbOp.delete(table, id); loadData(); } }
+
+function deleteData(table, id) { 
+    // Menggunakan UI Konfirmasi Custom Bawaan Aplikasi
+    showCustomConfirm("Menghapus data ini tidak dapat dibatalkan. Apakah Anda yakin ingin melanjutkan?", async () => {
+        await dbOp.delete(table, id); 
+        loadData();
+    });
+}
 
 // --- DASHBOARD FILTER (CARI NAMA) ---
 async function filterDashboard() {
