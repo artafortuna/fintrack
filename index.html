@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinTrack - Catatan Keuangan</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <header>
+        <div class="header-left">
+            <img id="app-logo" src="" alt="Logo" class="logo">
+            <h1 id="app-name">FinTrack</h1>
+        </div>
+        <div class="header-right">
+            <span id="realtime-date">Memuat...</span>
+            <button id="theme-toggle" class="icon-btn">🌙</button>
+        </div>
+    </header>
+
+    <div class="marquee-container">
+        <div class="marquee-content">
+            ✦ Selamat datang di aplikasi pencatatan Bon dan Hutang/Piutang! ✦ 
+        </div>
+    </div>
+
+    <main>
+        <section id="page-dashboard" class="page active">
+            <h2 class="section-title">📊 Rekapitulasi</h2>
+            <div class="card-grid">
+                <div class="card info-card">
+                    <h3>Total Bon</h3>
+                    <p id="dash-bon-total" class="amount text-blue">Rp 0</p>
+                    <small>Sisa Belum Dibayar: <span id="dash-bon-sisa">Rp 0</span></small>
+                </div>
+                <div class="card info-card">
+                    <h3>Total Hutang</h3>
+                    <p id="dash-hutang-total" class="amount text-red">Rp 0</p>
+                    <small>Sisa Belum Dibayar: <span id="dash-hutang-sisa">Rp 0</span></small>
+                </div>
+                <div class="card info-card">
+                    <h3>Total Piutang</h3>
+                    <p id="dash-piutang-total" class="amount text-green">Rp 0</p>
+                    <small>Sisa Belum Ditagih: <span id="dash-piutang-sisa">Rp 0</span></small>
+                </div>
+            </div>
+        </section>
+
+        <section id="page-bon" class="page">
+            <h2 class="section-title">🧾 Data Bon</h2>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Tanggal</th>
+                            <th>Nama</th>
+                            <th>Produk</th>
+                            <th>Harga</th>
+                            <th>Dibayar</th>
+                            <th>Sisa</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-bon"></tbody>
+                </table>
+            </div>
+            <button class="fab" onclick="openModal('modal-bon')">➕</button>
+        </section>
+
+        <section id="page-hutang" class="page">
+            <h2 class="section-title">🤝 Data Hutang & Piutang</h2>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Tanggal</th>
+                            <th>Jenis</th>
+                            <th>Nama</th>
+                            <th>Keterangan</th>
+                            <th>Jumlah</th>
+                            <th>Dibayar</th>
+                            <th>Sisa</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-hutang"></tbody>
+                </table>
+            </div>
+            <button class="fab" onclick="openModal('modal-hutang')">➕</button>
+        </section>
+    </main>
+
+    <nav class="bottom-nav">
+        <button class="nav-item active" onclick="switchPage('page-dashboard', this)">
+            <span class="nav-icon">🏠</span>
+            <span class="nav-text">Dashboard</span>
+        </button>
+        <button class="nav-item" onclick="switchPage('page-bon', this)">
+            <span class="nav-icon">🧾</span>
+            <span class="nav-text">Bon</span>
+        </button>
+        <button class="nav-item" onclick="switchPage('page-hutang', this)">
+            <span class="nav-icon">🤝</span>
+            <span class="nav-text">Hutang/Piutang</span>
+        </button>
+    </nav>
+
+    <footer>&copy; 2026 FinTrack App. Hak Cipta Dilindungi. Powered by Arta Fortuna</footer>
+
+    <div id="modal-bon" class="modal">
+        <div class="modal-content">
+            <h3 id="modal-bon-title">Tambah Bon</h3>
+            <form id="form-bon">
+                <input type="hidden" id="bon-id">
+                <div class="input-group">
+                    <label>Tanggal</label>
+                    <input type="date" id="bon-tanggal" required>
+                </div>
+                <div class="input-group">
+                    <label>Nama</label>
+                    <input type="text" id="bon-toko" required placeholder="Contoh: Budi">
+                </div>
+                <div class="input-group">
+                    <label>Produk</label>
+                    <input type="text" id="bon-barang" required placeholder="Contoh: Pulsa Indosat 5.000">
+                </div>
+                <div class="input-group">
+                    <label>Harga (Rp)</label>
+                    <input type="number" id="bon-total" required min="0">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeModal('modal-bon')">Batal</button>
+                    <button type="submit" class="btn-save">Simpan Data</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-hutang" class="modal">
+        <div class="modal-content">
+            <h3 id="modal-hutang-title">Tambah Hutang/Piutang</h3>
+            <form id="form-hutang">
+                <input type="hidden" id="hp-id">
+                <div class="input-group">
+                    <label>Tanggal</label>
+                    <input type="date" id="hp-tanggal" required>
+                </div>
+                <div class="input-group">
+                    <label>Jenis Transaksi</label>
+                    <select id="hp-jenis">
+                        <option value="Hutang">Hutang</option>
+                        <option value="Piutang">Piutang</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Nama</label>
+                    <input type="text" id="hp-pihak" required placeholder="Contoh: Budi">
+                </div>
+                <div class="input-group">
+                    <label>Keterangan</label>
+                    <input type="text" id="hp-ket" required placeholder="Contoh: Pinjam bayar kos">
+                </div>
+                <div class="input-group">
+                    <label>Jumlah (Rp)</label>
+                    <input type="number" id="hp-total" required min="0">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeModal('modal-hutang')">Batal</button>
+                    <button type="submit" class="btn-save">Simpan Data</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-bayar" class="modal">
+        <div class="modal-content">
+            <h3>Bayar / Cicil</h3>
+            <form id="form-bayar">
+                <input type="hidden" id="bayar-table">
+                <input type="hidden" id="bayar-id">
+                <p>Sisa Tagihan: <strong id="bayar-sisa-label">Rp 0</strong></p>
+                <div class="input-group">
+                    <label>Jumlah Pembayaran (Rp)</label>
+                    <input type="number" id="bayar-jumlah" required min="1">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeModal('modal-bayar')">Batal</button>
+                    <button type="submit" class="btn-save">Bayar Sekarang</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
