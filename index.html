@@ -155,7 +155,7 @@
         </button>
     </nav>
 
-    <footer>&copy; 2026 FinTrack App. Hak Cipta Dilindungi. Powered by Arta Fortuna</footer>
+    <footer>&copy; 2026 FinTrack App. Hak Cipta Dilindungi. Powered by Arta Fortuna.</footer>
 
     <div id="modal-bon" class="modal">
         <div class="modal-content">
@@ -232,7 +232,7 @@
                     <input type="date" id="tagihan-tanggal" required>
                 </div>
                 <div class="input-group">
-                    <label>Nama (Pemilik/Pihak)</label>
+                    <label>Nama (Pemilik)</label>
                     <input type="text" id="tagihan-pihak" required placeholder="Contoh: Budi">
                 </div>
                 <div class="input-group">
@@ -267,6 +267,18 @@
                     <button type="submit" class="btn-save">Bayar Sekarang</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <div id="modal-confirm" class="modal">
+        <div class="modal-content text-center">
+            <div class="confirm-icon">⚠️</div>
+            <h3 style="color: var(--text-main); margin-bottom: 5px;">Konfirmasi</h3>
+            <p id="confirm-msg" style="margin-bottom: 25px; color: var(--text-muted); font-size: 0.9rem;">Apakah Anda yakin?</p>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeModal('modal-confirm')">Batal</button>
+                <button type="button" class="btn-del" onclick="executeConfirm()">Ya, Lanjutkan</button>
+            </div>
         </div>
     </div>
 
