@@ -60,7 +60,7 @@ header h1 { font-size: 1.2rem; margin: 0; }
 .text-blue { color: var(--blue); }
 .text-red { color: var(--red); }
 .text-green { color: var(--green); }
-.text-orange { color: var(--orange); } /* Tambahan untuk Tagihan */
+.text-orange { color: var(--orange); }
 
 /* Status Cards Tagihan */
 .tagihan-card { margin-bottom: 25px; transition: transform 0.2s; }
@@ -130,3 +130,8 @@ footer { position: fixed; bottom: 2px; width: 100%; text-align: center; font-siz
 .modal-actions button { flex: 1; padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
 .btn-cancel { background-color: var(--border); color: var(--text-main); }
 .btn-save { background-color: var(--primary); color: white; }
+
+/* Custom Popup Confirm */
+.text-center { text-align: center; }
+.confirm-icon { font-size: 3rem; margin-bottom: 5px; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+@keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
